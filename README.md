@@ -47,6 +47,7 @@ scratch `$HOME` and stub package tools that log instead of installing.
 seder plan  [machine.lua] [-v]   # what apply would change (-v: unchanged items too)
 seder check [machine.lua]        # exit 2 when anything would change
 seder apply [machine.lua] [-y]   # show the plan, confirm, apply
+... --pull                       # also fast-forward clean checkouts; stale builds rerun
 seder --version                  # e.g. "seder 0.2.0 (485007a)": version and build commit
 ```
 

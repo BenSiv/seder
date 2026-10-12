@@ -1,6 +1,7 @@
 -- seder: puts an Ubuntu machine in order from a declarative description.
 --
 --   seder plan  [machine.lua] [-v]   show what apply would change
+--   ... --pull                       also fast-forward checkouts to upstream
 --   seder check [machine.lua]        exit 2 when the machine has drifted
 --   seder apply [machine.lua] [-y]   make the changes (asks first on a tty)
 --   seder --version
@@ -22,17 +23,20 @@ loader = require("loader")
 engine = require("engine")
 version = require("version")
 
-USAGE = """usage: seder <plan|check|apply> [machine.lua] [-v|--verbose] [-y|--yes]
+USAGE = """usage: seder <plan|check|apply> [machine.lua] [-v|--verbose] [-y|--yes] [--pull]
        seder --version
 
   plan    show what apply would change (-v: unchanged items too)
   check   like plan, but exit 2 when anything would change
   apply   make the changes; asks for confirmation unless -y
 
+  --pull  fetch every checkout and fast-forward it to its upstream when it
+          has no local commits or changes (otherwise it is left alone)
+
 machine.lua defaults to machines/<hostname>.lua."""
 
 function parse_args(args)
-    options = {verbose = false, yes = false}
+    options = {verbose = false, yes = false, pull = false}
     for _, value in ipairs(args) do
         if value == "-v" or value == "--verbose" then
             options.verbose = true
@@ -42,6 +46,8 @@ function parse_args(args)
             options.help = true
         elseif value == "--version" then
             options.version = true
+        elseif value == "--pull" then
+            options.pull = true
         elseif string.sub(value, 1, 1) == "-" then
             error("unknown option " .. value, 0)
         elseif options.command == nil then
@@ -91,7 +97,7 @@ function main(args)
         machine_path = default_machine()
     end
     desired, _ = loader.load_desired(machine_path, engine.providers)
-    groups = engine.plan(desired)
+    groups = engine.plan(desired, {pull = options.pull})
     counts = engine.print_plan(groups, options.verbose)
     changes = counts.add + counts.remove + counts.conflict
     if command == "plan" then

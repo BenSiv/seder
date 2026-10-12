@@ -49,7 +49,10 @@ apt, snap, npm, path, repo, link, dconf, run). For each provider with items:
    `snap list`, ...).
 3. `status(item, current, wanted)` per item -> present / absent / conflict.
 
-Each item becomes `add`, `remove`, `ok` or `conflict`. When the tool is
+Each item becomes `add`, `remove`, `ok` or `conflict`. Providers that
+change a path when they act (`repo`) say so through `touches`; those paths
+are passed on to later providers, so a build whose sources are being pulled
+in this run is planned as a rebuild now, not discovered on the next run. When the tool is
 missing, `absent` items are `ok` (nothing of that kind can be installed)
 and `present` items are `add`, left to apply because an earlier step may
 install the tool.

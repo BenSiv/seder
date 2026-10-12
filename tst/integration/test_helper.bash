@@ -14,7 +14,7 @@ setup_env() {
     export HOME="$WORK/home"
     export LOG="$WORK/log"
     : > "$LOG"
-    for tool in sh bash cat grep mkdir rm ln mv test env printf head sed tr sort hostname true false; do
+    for tool in sh bash cat grep mkdir rm ln mv test env printf head tail sed tr sort xargs stat touch hostname true false; do
         ln -s "$(command -v "$tool")" "$WORK/sysbin/$tool"
     done
     export PATH="$WORK/stubs:$WORK/sysbin"
@@ -50,4 +50,14 @@ machine() {
 # bundle name < lua -> bundles/name.lua
 bundle() {
     cat > "bundles/$1.lua"
+}
+
+# A real tool in place of a stub, for tests that need its behaviour.
+real() {
+    ln -s "$(PATH="$ORIG_PATH" command -v "$1")" "$WORK/stubs/$1"
+}
+
+# git with a fixed identity, run with the full PATH (test setup only).
+setup_git() {
+    PATH="$ORIG_PATH" git -c user.name=test -c user.email=test@example.com "$@"
 }

@@ -10,10 +10,17 @@
 --   required  state -> list of fields that must be set
 --   states    which of "present"/"absent" the provider supports
 --   available()        -> ok, reason   tool exists and can be probed
---   state(entries)     -> current      one probe for all items
---   status(item, current, wanted) -> "present" | "absent" | "conflict", note
+--   state(entries, context)  -> current   one probe for all items
+--   status(item, current, wanted, context)
+--                      -> "present" | "absent" | "conflict", note
 --   add(items) / remove(items) -> ok
--- Optional: validate(item, state) -> error string or nil.
+-- Optional: validate(item, state) -> error string or nil;
+--           touches(item) -> path an add/remove of this item changes.
+--
+-- `context` carries the run's options (context.options.pull) and the
+-- paths earlier providers in this plan will change (context.changing),
+-- so a build whose sources are about to be pulled counts as stale now
+-- rather than on the next run.
 
 shell = require("shell")
 
@@ -36,7 +43,7 @@ engine.providers = {
     run = require("providers.run"),
 }
 
-function decide(provider, entry, available, reason, current)
+function decide(provider, entry, available, reason, current, context)
     action = {entry = entry, label = entry.item[provider.key], note = nil}
     if available != true then
         -- Without the tool nothing of its kind can be installed, so
@@ -51,7 +58,7 @@ function decide(provider, entry, available, reason, current)
         end
         return action
     end
-    status, note = provider.status(entry.item, current, entry.state)
+    status, note = provider.status(entry.item, current, entry.state, context)
     action.note = note
     if status == "conflict" then
         action.kind = "conflict"
@@ -67,7 +74,12 @@ end
 
 -- Returns a plan: one group per provider, in PROVIDER_ORDER, each with
 -- its actions. Action kinds: "add", "remove", "ok", "conflict".
-function engine.plan(desired)
+-- options.pull: let repo items fast-forward to their upstream.
+function engine.plan(desired, options)
+    if options == nil then
+        options = {}
+    end
+    context = {options = options, changing = {}}
     groups = {}
     for _, name in ipairs(PROVIDER_ORDER) do
         entries = desired[name]
@@ -76,11 +88,15 @@ function engine.plan(desired)
             available, reason = provider.available()
             current = nil
             if available == true then
-                current = provider.state(entries)
+                current = provider.state(entries, context)
             end
             actions = {}
             for _, entry in ipairs(entries) do
-                table.insert(actions, decide(provider, entry, available, reason, current))
+                action = decide(provider, entry, available, reason, current, context)
+                table.insert(actions, action)
+                if provider.touches != nil and (action.kind == "add" or action.kind == "remove") then
+                    table.insert(context.changing, provider.touches(entry.item))
+                end
             end
             table.insert(groups, {name = name, provider = provider, actions = actions})
         end
