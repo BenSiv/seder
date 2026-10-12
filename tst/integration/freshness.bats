@@ -97,3 +97,20 @@ LUA
     [ "$status" -eq 1 ]
     [[ "$output" == *"'sources' needs 'creates'"* ]]
 }
+
+@test "a single tracked file can be a source" {
+    echo 'main' > "$HOME/p/proj/entry.lua"
+    setup_git -C "$HOME/p/proj" add entry.lua
+    setup_git -C "$HOME/p/proj" commit -qm entry
+    machine '"m"'
+    bundle m <<'LUA'
+return {run = {present = {{name = "build", dir = "~/p/proj",
+    cmd = "mkdir -p bin && cat entry.lua > bin/out",
+    creates = "~/p/proj/bin/out", sources = {"~/p/proj/entry.lua"}}}}}
+LUA
+    run "$SEDER" apply machines/test.lua -y
+    [ "$status" -eq 0 ]
+    touch -d '+1 minute' "$HOME/p/proj/entry.lua"
+    run "$SEDER" plan machines/test.lua
+    [[ "$output" == *"+ build  ($HOME/p/proj/entry.lua is newer than the build)"* ]]
+}

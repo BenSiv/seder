@@ -80,16 +80,23 @@ function wrap(item, body)
     return cmd
 end
 
--- The newest git-tracked file under `source`: mtime and path, or 0
--- when there is none (not cloned yet, or not in a checkout).
+-- The newest git-tracked file at `source` (a directory, or one file):
+-- mtime and path, or 0 when there is none (not cloned yet, or not in a
+-- checkout).
 function newest_tracked(source)
-    out, ok = shell.capture("cd " .. shell.quote(source)
-        .. " && git ls-files -z | xargs -0 -r stat -c '%Y %n' | sort -n | tail -n 1")
+    dir = source
+    spec = "."
+    if lfs.attributes(source, "mode") == "file" then
+        dir = shell.parent(source)
+        spec = string.sub(source, string.len(dir) + 2)
+    end
+    out, ok = shell.capture("cd " .. shell.quote(dir) .. " && git ls-files -z -- "
+        .. shell.quote(spec) .. " | xargs -0 -r stat -c '%Y %n' | sort -n | tail -n 1")
     seconds, name = string.match(out, "^(%d+) (.-)%s*$")
     if ok != true or seconds == nil then
         return 0, nil
     end
-    return tonumber(seconds), source .. "/" .. name
+    return tonumber(seconds), dir .. "/" .. name
 end
 
 function inside(path, root)
