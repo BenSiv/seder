@@ -1,16 +1,27 @@
-# A pristine Ubuntu with seder built, for checking a data directory
-# against a fresh install without a spare machine. Snaps don't run in
-# containers, so snap items plan as "snap not installed".
+# A pristine install of any distribution with seder built, for checking
+# a data directory against a fresh machine without a spare one. BASE is
+# the image (debian:trixie, ubuntu:24.04, fedora:42, archlinux, ...); the
+# build prerequisites come from whichever package manager it has. Snaps
+# and desktop sessions don't run in containers, so snap and dconf items
+# plan as unavailable.
 #
-#   dev/fresh-ubuntu.sh ~/Projects/configs/seder machines/laptop.lua
-FROM ubuntu:24.04
+#   dev/fresh.sh debian:trixie ~/Projects/configs/seder machines/laptop.lua
+ARG BASE=debian:trixie
+FROM ${BASE}
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        git build-essential libreadline-dev ca-certificates sudo bats \
-    && rm -rf /var/lib/apt/lists/*
+RUN if command -v apt-get > /dev/null; then \
+        apt-get update && apt-get install -y --no-install-recommends \
+            git build-essential libreadline-dev ca-certificates sudo; \
+    elif command -v dnf > /dev/null; then \
+        dnf install -y git gcc make readline-devel sudo; \
+    elif command -v pacman > /dev/null; then \
+        pacman -Sy --noconfirm --needed git base-devel readline sudo; \
+    else \
+        echo "no supported package manager in this image" >&2; exit 1; \
+    fi
 
 RUN useradd -m -s /bin/bash ben \
+    && mkdir -p /etc/sudoers.d \
     && echo 'ben ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ben
 
 USER ben

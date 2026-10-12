@@ -150,3 +150,70 @@ LUA
     [[ "$output" == *"no desktop session bus at $WORK/nowhere/bus"* ]]
     [ ! -s "$LOG" ]
 }
+
+@test "flatpak adds a missing remote, installs missing apps, removes installed ones" {
+    stub flatpak 'case "$1" in
+list) printf "Application\norg.old.App\norg.have.App\n";;
+*) echo "flatpak $*" >> "$LOG";; esac'
+    machine '"m"'
+    bundle m <<'LUA'
+return {flatpak = {
+    present = {
+        {name = "org.have.App", remote = "flathub"},
+        {name = "org.new.App", remote = "flathub", remote_url = "https://dl.flathub.org/repo/flathub.flatpakrepo"},
+    },
+    absent = {"org.old.App", "org.never.App"},
+}}
+LUA
+    run "$SEDER" apply machines/test.lua -y
+    [ "$status" -eq 0 ]
+    grep -qx "flatpak uninstall -y --noninteractive org.old.App" "$LOG"
+    grep -qx "flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo" "$LOG"
+    grep -qx "flatpak install -y --noninteractive flathub org.new.App" "$LOG"
+    ! grep -q "org.have.App\|org.never.App" "$LOG"
+    [ "$(grep -n '^flatpak remote-add' "$LOG" | cut -d: -f1)" -lt "$(grep -n '^flatpak install' "$LOG" | cut -d: -f1)" ]
+}
+
+@test "flatpak items need a remote" {
+    machine '"m"'
+    bundle m <<'LUA'
+return {flatpak = {present = {"org.new.App"}}}
+LUA
+    run "$SEDER" plan machines/test.lua
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"missing required field 'remote'"* ]]
+}
+
+@test "dnf installs missing packages and URLs, removes installed ones" {
+    stub rpm 'printf "bash\nfirefox\n"'
+    stub dnf 'echo "dnf $*" >> "$LOG"'
+    machine '"m"'
+    bundle m <<'LUA'
+return {dnf = {
+    present = {"bash", "jq", {name = "quarto", url = "https://example.com/quarto.rpm"}},
+    absent = {"firefox", "thunderbird"},
+}}
+LUA
+    run "$SEDER" apply machines/test.lua -y
+    [ "$status" -eq 0 ]
+    grep -qx "dnf remove -y firefox" "$LOG"
+    grep -qx "dnf install -y jq https://example.com/quarto.rpm" "$LOG"
+    ! grep -q "bash\|thunderbird" "$LOG"
+}
+
+@test "pacman installs from repos and files, removes with dependencies" {
+    stub pacman 'case "$1" in -Qq) printf "bash\nfirefox\n";; *) echo "pacman $*" >> "$LOG";; esac'
+    machine '"m"'
+    bundle m <<'LUA'
+return {pacman = {
+    present = {"bash", "jq", {name = "quarto", url = "https://example.com/quarto.pkg.tar.zst"}},
+    absent = {"firefox", "thunderbird"},
+}}
+LUA
+    run "$SEDER" apply machines/test.lua -y
+    [ "$status" -eq 0 ]
+    grep -qx "pacman -Rns --noconfirm firefox" "$LOG"
+    grep -qx "pacman -S --needed --noconfirm jq" "$LOG"
+    grep -qx "pacman -U --noconfirm https://example.com/quarto.pkg.tar.zst" "$LOG"
+    ! grep -q "thunderbird" "$LOG"
+}

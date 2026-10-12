@@ -14,7 +14,7 @@ setup_env() {
     export HOME="$WORK/home"
     export LOG="$WORK/log"
     : > "$LOG"
-    for tool in sh bash cat grep mkdir rm ln mv test env printf head tail sed tr sort xargs stat touch hostname true false; do
+    for tool in sh bash cat grep mkdir rm ln mv test env printf head tail sed tr sort cut xargs stat touch hostname true false; do
         ln -s "$(command -v "$tool")" "$WORK/sysbin/$tool"
     done
     export PATH="$WORK/stubs:$WORK/sysbin"

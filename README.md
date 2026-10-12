@@ -1,6 +1,6 @@
 # seder
 
-Puts an Ubuntu machine in order (Hebrew סדר, "order") from a declarative
+Puts a Linux machine in order (Hebrew סדר, "order") from a declarative
 description. You write down what should be on the machine; seder checks
 what is actually there and changes only the difference. Removing
 something that is not installed does nothing, on every machine, without
@@ -14,10 +14,12 @@ is one deployment's data. Ben's machines are described in
 ## Status
 
 - **Plan / check / apply** with removals before additions -- done.
-- **Providers:** apt (including .deb URLs), snap, npm, path, link, repo,
-  dconf, run -- done (see [doc/providers.md](doc/providers.md)).
+- **Providers:** apt, dnf, pacman (each with package-file URLs), snap,
+  flatpak, npm, path, link, repo, dconf, run. Nothing in the engine assumes a
+  distribution; data picks the providers its machines have -- done (see [doc/providers.md](doc/providers.md)).
 - **Tested** with unit tests and bats tests against stub tools; not yet
-  run end to end on a fresh install (`dev/` holds a container for that).
+  run end to end on a fresh install (`dev/fresh.sh` runs one in a container
+  of any distribution).
 
 ## Building
 

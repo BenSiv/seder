@@ -1,4 +1,4 @@
--- Snap packages. On a fresh Ubuntu install snapd is still seeding for a
+-- Snap packages. On a fresh install snapd is still seeding for a
 -- while after first boot and snap commands block until it is done, so
 -- the first change waits for seeding explicitly instead of hanging
 -- mid-install.

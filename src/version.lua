@@ -5,8 +5,9 @@
 --   0.1.0  apt, snap, npm, path, repo, link, run
 --   0.2.0  dconf provider; built-in ${uid}; requires_seder
 --   0.3.0  run `sources` (rebuild when stale); --pull for repos
+--   0.4.0  flatpak, dnf and pacman providers
 
-version = {number = "0.3.0"}
+version = {number = "0.4.0"}
 
 -- The commit the binary was built from; bld/build.sh writes
 -- src/build_commit.lua (untracked). A run from source has none. The

@@ -42,11 +42,11 @@ instead of an error about the feature it uses.
 ## Plan
 
 `src/engine.lua` walks providers in a fixed order (`PROVIDER_ORDER`:
-apt, snap, npm, path, repo, link, dconf, run). For each provider with items:
+apt, dnf, pacman, snap, flatpak, npm, path, repo, link, dconf, run). For each provider with items:
 
 1. `available()` -- is its tool on the machine?
-2. `state(entries)` -- one probe for all items (one `dpkg-query`, one
-   `snap list`, ...).
+2. `state(entries)` -- one probe for all items (one `dpkg-query` or
+   `rpm -qa`, one `flatpak list`, ...).
 3. `status(item, current, wanted)` per item -> present / absent / conflict.
 
 Each item becomes `add`, `remove`, `ok` or `conflict`. Providers that

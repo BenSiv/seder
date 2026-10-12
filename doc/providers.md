@@ -6,7 +6,10 @@ An item is a string (the provider's key field) or a table of fields.
 | Provider | Key | Fields | present | absent |
 |---|---|---|---|---|
 | `apt` | `name` | `url`: install a .deb from this URL | install | purge |
+| `dnf` | `name` | `url`: install an .rpm from this URL | install | remove |
+| `pacman` | `name` | `url`: install a package file from this URL | `-S --needed` (`-U` for `url`) | `-Rns` |
 | `snap` | `name` | `classic`, `channel` | install | remove |
+| `flatpak` | `name` (app ID) | `remote`, `remote_url` | `flatpak install` | `flatpak uninstall` |
 | `npm` | `name` | | `npm install -g` | `npm uninstall -g` |
 | `path` | `path` | | `mkdir -p` | `rm -rf` |
 | `link` | `path` | `target` | symlink | remove the symlink |
@@ -20,9 +23,28 @@ An item is a string (the provider's key field) or a table of fields.
 plan, so a renamed package shows before apply. `apt-get update` runs once
 before the first install.
 
+**dnf.** One `rpm -qa` for the installed set. URL items go to `dnf install`
+alongside named ones.
+
+**pacman.** One `pacman -Qq` for the installed set. seder never upgrades the
+system, and Arch doesn't support partial upgrades, so keep the system
+current with `pacman -Syu` yourself. Removal also drops dependencies nothing
+else needs.
+
+Package names differ between distributions, so data names its package
+manager explicitly rather than through a generic "package" provider: a
+bundle for Debian uses `apt`, one for Fedora uses `dnf`.
+
 **snap.** The first change waits for `snap wait system seed.loaded`: on a
 fresh install snapd is still seeding after first boot and snap commands
 block until it is done.
+
+**flatpak.** System-wide installs. `remote` names where the app comes from;
+with `remote_url` the remote is added first when missing
+(`flatpak remote-add --if-not-exists`), so a fresh install needs no manual
+setup. Uninstalling leaves remotes in place. When flatpak itself isn't
+installed yet, `present` items are attempted at apply time, after apt has
+had the chance to install it.
 
 **npm.** Uses sudo only when the global prefix isn't writable by the user.
 

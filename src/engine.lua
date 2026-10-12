@@ -26,15 +26,23 @@ shell = require("shell")
 
 engine = {}
 
--- Additions run in this order and removals in reverse: packages before
+-- Additions run in this order and removals in reverse: system packages
+-- (whichever manager the data uses) first, then other package sources;
+-- packages before
 -- the repos, links and builds that need them, and npm packages are
 -- removed before npm itself. Settings (dconf) come after the files they
 -- may point at; run comes last, so builds see everything else in place.
-PROVIDER_ORDER = {"apt", "snap", "npm", "path", "repo", "link", "dconf", "run"}
+PROVIDER_ORDER = {
+    "apt", "dnf", "pacman", "snap", "flatpak", "npm",
+    "path", "repo", "link", "dconf", "run",
+}
 
 engine.providers = {
     apt = require("providers.apt"),
+    dnf = require("providers.dnf"),
+    pacman = require("providers.pacman"),
     snap = require("providers.snap"),
+    flatpak = require("providers.flatpak"),
     npm = require("providers.npm"),
     path = require("providers.path"),
     repo = require("providers.repo"),

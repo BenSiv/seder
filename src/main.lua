@@ -1,4 +1,4 @@
--- seder: puts an Ubuntu machine in order from a declarative description.
+-- seder: puts a Linux machine in order from a declarative description.
 --
 --   seder plan  [machine.lua] [-v]   show what apply would change
 --   ... --pull                       also fast-forward checkouts to upstream
