@@ -1,0 +1,27 @@
+# A pristine Ubuntu with seder built, for checking a data directory
+# against a fresh install without a spare machine. Snaps don't run in
+# containers, so snap items plan as "snap not installed".
+#
+#   dev/fresh-ubuntu.sh ~/Projects/configs/seder machines/laptop.lua
+FROM ubuntu:24.04
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        git build-essential libreadline-dev ca-certificates sudo bats \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m -s /bin/bash ben \
+    && echo 'ben ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ben
+
+USER ben
+WORKDIR /home/ben/Projects
+
+RUN git clone --depth 1 https://github.com/BenSiv/luam.git luam \
+    && cd luam && bash bld/build_lang.sh
+
+COPY --chown=ben:ben . seder
+RUN cd seder && bash bld/build.sh
+
+WORKDIR /data
+ENTRYPOINT ["/home/ben/Projects/seder/bin/seder"]
+CMD ["plan", "-v"]

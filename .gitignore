@@ -1,0 +1,3 @@
+bin/
+obj/
+tst/integration/.tmp-*/
