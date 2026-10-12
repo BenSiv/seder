@@ -96,3 +96,30 @@ LUA
     [ "$status" -eq 0 ]
     [[ "$output" == *"+ $HOME/run/4242/ben"* ]]
 }
+
+@test "--version names the version and the commit it was built from" {
+    run "$SEDER" --version
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ ^seder\ [0-9]+\.[0-9]+\.[0-9]+\ \(.+\)$ ]]
+}
+
+@test "a machine needing a newer seder says so before anything else" {
+    cat > machines/test.lua <<'LUA'
+return {requires_seder = "99.0.0", vars = {x = "${not_yet_a_builtin}"}, bundles = {"m"}}
+LUA
+    bundle m <<'LUA'
+return {}
+LUA
+    expect_error "needs seder 99.0.0 or newer, this is seder "
+}
+
+@test "a machine needing this seder or older loads" {
+    cat > machines/test.lua <<'LUA'
+return {requires_seder = "0.1.0", bundles = {"m"}}
+LUA
+    bundle m <<'LUA'
+return {path = {present = {"~/x"}}}
+LUA
+    run "$SEDER" plan machines/test.lua
+    [ "$status" -eq 0 ]
+}

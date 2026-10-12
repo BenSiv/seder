@@ -7,10 +7,11 @@
 
 sandbox = require("sandbox")
 shell = require("shell")
+version = require("version")
 
 loader = {}
 
-MACHINE_KEYS = {vars = "table", bundles = "table"}
+MACHINE_KEYS = {vars = "table", bundles = "table", requires_seder = "string"}
 
 function fail(path, message)
     error(path .. ": " .. message, 0)
@@ -151,10 +152,21 @@ function loader.load_machine(path)
     machine = loader.load_table(path)
     for key, value in pairs(machine) do
         if MACHINE_KEYS[key] == nil then
-            fail(path, "unknown key '" .. tostring(key) .. "' (allowed: vars, bundles)")
+            fail(path, "unknown key '" .. tostring(key) .. "' (allowed: vars, bundles, requires_seder)")
         end
         if type(value) != MACHINE_KEYS[key] then
-            fail(path, "'" .. key .. "' must be a table")
+            fail(path, "'" .. key .. "' must be a " .. MACHINE_KEYS[key])
+        end
+    end
+    -- Checked first: data written for a newer seder would otherwise fail
+    -- on whatever new feature it uses, with a less helpful message.
+    if machine.requires_seder != nil then
+        if version.parse(machine.requires_seder) == nil then
+            fail(path, "requires_seder must look like 0.2.0")
+        end
+        if version.satisfies(machine.requires_seder) == false then
+            fail(path, "needs seder " .. machine.requires_seder .. " or newer, this is "
+                .. version.describe() .. "; pull and rebuild seder (or run install.sh)")
         end
     end
     if machine.bundles == nil or #machine.bundles == 0 then

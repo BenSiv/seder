@@ -28,6 +28,17 @@ then a leading `~/` to `$HOME/`. Vars may refer to each other.
 The same resource wanted `present` in one bundle and `absent` in another
 is an error naming both files.
 
+## Versions
+
+`src/version.lua` holds seder's version, and `bld/build.sh` records the
+commit it builds from, so `seder --version` describes the binary itself
+rather than whatever the checkout says. The minor number goes up whenever
+data files gain something an older seder can't read (a provider, a field,
+a built-in var). A machine file declares the oldest seder that reads it
+with `requires_seder = "0.2.0"`, which is checked before anything else, so
+data written for a newer seder fails with "needs seder 0.2.0 or newer"
+instead of an error about the feature it uses.
+
 ## Plan
 
 `src/engine.lua` walks providers in a fixed order (`PROVIDER_ORDER`:

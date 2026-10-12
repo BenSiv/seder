@@ -15,6 +15,10 @@ if [ -z "$LUAM_DIR" ] || [ ! -f "$LUAM_DIR/obj/liblua.a" ]; then
     exit 1
 fi
 
+# Record the commit (with -dirty for uncommitted changes) for --version.
+COMMIT=$(git describe --always --dirty 2>/dev/null || echo unknown)
+printf 'return "%s"\n' "$COMMIT" > src/build_commit.lua
+
 exec "$LUAM_DIR/bin/luam" "$LUAM_DIR/lib/static/build.lua" \
     --entry main.lua \
     --bin seder \

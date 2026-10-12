@@ -47,6 +47,7 @@ scratch `$HOME` and stub package tools that log instead of installing.
 seder plan  [machine.lua] [-v]   # what apply would change (-v: unchanged items too)
 seder check [machine.lua]        # exit 2 when anything would change
 seder apply [machine.lua] [-y]   # show the plan, confirm, apply
+seder --version                  # e.g. "seder 0.2.0 (485007a)": version and build commit
 ```
 
 `machine.lua` defaults to `machines/<hostname>.lua` under the current
@@ -61,6 +62,7 @@ bundles/gnome.lua
 ```lua
 -- machines/laptop.lua
 return {
+    requires_seder = "0.2.0",   -- older seders refuse with "update seder"
     vars = {projects = "~/Projects", configs = "${projects}/configs"},
     bundles = {"base", "gnome", "dev"},
 }

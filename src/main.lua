@@ -3,6 +3,7 @@
 --   seder plan  [machine.lua] [-v]   show what apply would change
 --   seder check [machine.lua]        exit 2 when the machine has drifted
 --   seder apply [machine.lua] [-y]   make the changes (asks first on a tty)
+--   seder --version
 --
 -- machine.lua defaults to machines/<hostname>.lua under the current
 -- directory; its bundles are read from the bundles/ directory next to
@@ -19,8 +20,10 @@ end
 shell = require("shell")
 loader = require("loader")
 engine = require("engine")
+version = require("version")
 
 USAGE = """usage: seder <plan|check|apply> [machine.lua] [-v|--verbose] [-y|--yes]
+       seder --version
 
   plan    show what apply would change (-v: unchanged items too)
   check   like plan, but exit 2 when anything would change
@@ -37,6 +40,8 @@ function parse_args(args)
             options.yes = true
         elseif value == "-h" or value == "--help" then
             options.help = true
+        elseif value == "--version" then
+            options.version = true
         elseif string.sub(value, 1, 1) == "-" then
             error("unknown option " .. value, 0)
         elseif options.command == nil then
@@ -66,6 +71,10 @@ end
 
 function main(args)
     options = parse_args(args)
+    if options.version == true then
+        print(version.describe())
+        return 0
+    end
     if options.help == true or options.command == nil then
         print(USAGE)
         if options.help == true then
