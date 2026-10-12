@@ -5,6 +5,7 @@
 -- the user's session, so apply from a terminal inside the desktop.
 
 shell = require("shell")
+lfs = require("lfs")
 
 dconf = {
     key = "key",
@@ -25,6 +26,29 @@ function dconf.available()
         return true
     end
     return false, "dconf not installed"
+end
+
+-- Writes go through the desktop session's D-Bus. A terminal outside the
+-- session (ssh, a tmux started elsewhere) has no DBUS_SESSION_BUS_ADDRESS,
+-- and GLib then tries dbus-launch, which Ubuntu doesn't ship. The logged-in
+-- session's bus is at $XDG_RUNTIME_DIR/bus (/run/user/<uid>/bus), so use
+-- that when the variable is missing. Returns the env prefix, or nil and
+-- why there is no bus.
+function session_bus()
+    address = os.getenv("DBUS_SESSION_BUS_ADDRESS")
+    if address != nil and address != "" then
+        return ""
+    end
+    runtime = os.getenv("XDG_RUNTIME_DIR")
+    if runtime == nil or runtime == "" then
+        uid, _ = shell.capture("id -u")
+        runtime = "/run/user/" .. string.gsub(uid, "%s+$", "")
+    end
+    bus = runtime .. "/bus"
+    if lfs.attributes(bus) == nil then
+        return nil, "no desktop session bus at " .. bus .. "; log in to the desktop and apply from there"
+    end
+    return "env DBUS_SESSION_BUS_ADDRESS=" .. shell.quote("unix:path=" .. bus) .. " "
 end
 
 -- One `dconf dump /` for the whole database: full key path -> value.
@@ -80,20 +104,28 @@ function dconf.status(item, current, wanted)
     return "absent", "now " .. value
 end
 
-function write_key(item)
-    return shell.run("dconf write " .. shell.quote(item.key) .. " " .. shell.quote(item.value))
-end
-
-function reset_key(item)
-    return shell.run("dconf reset " .. shell.quote(item.key))
+-- Runs `dconf <args>` for each item on the session bus.
+function each_on_bus(items, args_for)
+    prefix, reason = session_bus()
+    if prefix == nil then
+        print("    " .. reason)
+        return false
+    end
+    return shell.each(items, function(item)
+        return shell.run(prefix .. "dconf " .. args_for(item))
+    end)
 end
 
 function dconf.add(items)
-    return shell.each(items, write_key)
+    return each_on_bus(items, function(item)
+        return "write " .. shell.quote(item.key) .. " " .. shell.quote(item.value)
+    end)
 end
 
 function dconf.remove(items)
-    return shell.each(items, reset_key)
+    return each_on_bus(items, function(item)
+        return "reset " .. shell.quote(item.key)
+    end)
 end
 
 return dconf

@@ -109,7 +109,7 @@ return {dconf = {
 LUA
     run "$SEDER" plan machines/test.lua
     [[ "$output" == *"+ /org/gnome/desktop/interface/color-scheme  (now 'default')"* ]]
-    run "$SEDER" apply machines/test.lua -y
+    DBUS_SESSION_BUS_ADDRESS=unix:path=/test run "$SEDER" apply machines/test.lua -y
     [ "$status" -eq 0 ]
     grep -qx "dconf write /org/gnome/desktop/interface/color-scheme 'prefer-dark'" "$LOG"
     grep -qx "dconf write /org/test/new @as \[\]" "$LOG"
@@ -125,4 +125,28 @@ LUA
     run "$SEDER" plan machines/test.lua
     [ "$status" -eq 1 ]
     [[ "$output" == *"key must be a full key path"* ]]
+}
+
+@test "dconf finds the session bus when the environment lacks it" {
+    stub dconf 'case "$1" in dump) ;; *) echo "dconf $* bus=$DBUS_SESSION_BUS_ADDRESS" >> "$LOG";; esac'
+    machine '"m"'
+    bundle m <<'LUA'
+return {dconf = {present = {{key = "/org/a", value = "true"}}}}
+LUA
+    mkdir -p "$WORK/run" && : > "$WORK/run/bus"
+    DBUS_SESSION_BUS_ADDRESS= XDG_RUNTIME_DIR="$WORK/run" run "$SEDER" apply machines/test.lua -y
+    [ "$status" -eq 0 ]
+    grep -qx "dconf write /org/a true bus=unix:path=$WORK/run/bus" "$LOG"
+}
+
+@test "dconf without a session bus fails with a clear message" {
+    stub dconf 'case "$1" in dump) ;; *) echo "dconf $*" >> "$LOG";; esac'
+    machine '"m"'
+    bundle m <<'LUA'
+return {dconf = {present = {{key = "/org/a", value = "true"}}}}
+LUA
+    DBUS_SESSION_BUS_ADDRESS= XDG_RUNTIME_DIR="$WORK/nowhere" run "$SEDER" apply machines/test.lua -y
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"no desktop session bus at $WORK/nowhere/bus"* ]]
+    [ ! -s "$LOG" ]
 }

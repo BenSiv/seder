@@ -37,8 +37,10 @@ removes only symlinks; a real file is left alone.
 **dconf.** `value` is GVariant text as `dconf read` prints it: `'prefer-dark'`,
 `['a', 'b']`, `@as []`. Only listed keys are managed. Plain numbers compare
 numerically, since dconf prints doubles with 17 digits (`0.6` reads back as
-`0.59999999999999998`). Writes reach the user's session, so apply from a
-terminal inside the desktop. Don't declare keys GNOME shares with the
+`0.59999999999999998`). Writes go through the logged-in desktop session's
+D-Bus: when `DBUS_SESSION_BUS_ADDRESS` is unset (ssh, a tmux started
+elsewhere), dconf uses `$XDG_RUNTIME_DIR/bus` (`/run/user/<uid>/bus`), and
+without a session it fails with a message saying so. Don't declare keys GNOME shares with the
 system, like `/org/gnome/shell/enabled-extensions` (Ubuntu's own
 extensions are in it); use a guarded `run` item with the tool that edits
 it instead.
