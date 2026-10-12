@@ -22,7 +22,7 @@ provider doesn't support, and provider-specific checks (`validate`) --
 before anything touches the machine.
 
 Strings are expanded once at load time: `${name}` from the machine's
-`vars` (plus built-in `home` and `user`; an unknown name is an error),
+`vars` (plus built-in `home`, `user` and `uid`; an unknown name is an error),
 then a leading `~/` to `$HOME/`. Vars may refer to each other.
 
 The same resource wanted `present` in one bundle and `absent` in another
@@ -31,7 +31,7 @@ is an error naming both files.
 ## Plan
 
 `src/engine.lua` walks providers in a fixed order (`PROVIDER_ORDER`:
-apt, snap, npm, path, repo, link, run). For each provider with items:
+apt, snap, npm, path, repo, link, dconf, run). For each provider with items:
 
 1. `available()` -- is its tool on the machine?
 2. `state(entries)` -- one probe for all items (one `dpkg-query`, one

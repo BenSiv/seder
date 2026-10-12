@@ -10,6 +10,7 @@ An item is a string (the provider's key field) or a table of fields.
 | `npm` | `name` | | `npm install -g` | `npm uninstall -g` |
 | `path` | `path` | | `mkdir -p` | `rm -rf` |
 | `link` | `path` | `target` | symlink | remove the symlink |
+| `dconf` | `key` | `value` | `dconf write` | `dconf reset` |
 | `repo` | `path` | `url` | `git clone --recurse-submodules` | not supported |
 | `run` | `name` | `cmd`, `dir`, `env`, `sudo`, `creates` or `unless` | run `cmd` | not supported |
 
@@ -32,6 +33,15 @@ file in the way is a conflict.
 **link.** A real file or directory already at `path` (a fresh install's
 own `~/.bashrc`) is moved to `<path>.orig`, never deleted. `absent`
 removes only symlinks; a real file is left alone.
+
+**dconf.** `value` is GVariant text as `dconf read` prints it: `'prefer-dark'`,
+`['a', 'b']`, `@as []`. Only listed keys are managed. Plain numbers compare
+numerically, since dconf prints doubles with 17 digits (`0.6` reads back as
+`0.59999999999999998`). Writes reach the user's session, so apply from a
+terminal inside the desktop. Don't declare keys GNOME shares with the
+system, like `/org/gnome/shell/enabled-extensions` (Ubuntu's own
+extensions are in it); use a guarded `run` item with the tool that edits
+it instead.
 
 **repo.** Clones once and never pulls: a working copy may hold work in
 progress. An existing non-empty directory that isn't a checkout is a
@@ -63,11 +73,9 @@ Create `src/providers/<name>.lua` returning a table with:
 Register it in `engine.providers` and place it in `PROVIDER_ORDER`
 (`src/engine.lua`), then add bats coverage in `tst/integration/`.
 
-## Planned
+## Not covered
 
-What the Ansible setup did that no provider covers yet:
-
-- `dconf` -- GNOME settings (needs the user's session bus).
-- `git_config` -- global git settings.
-- `service` -- stop and disable systemd units.
-- `user` -- remove system accounts.
+- Stopping systemd units and removing system accounts: one-off cleanup
+  rather than a state to keep, so done by hand where needed.
+- Global git settings: link a tracked gitconfig to `~/.gitconfig`
+  instead of declaring keys one by one.

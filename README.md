@@ -15,8 +15,7 @@ is one deployment's data. Ben's machines are described in
 
 - **Plan / check / apply** with removals before additions -- done.
 - **Providers:** apt (including .deb URLs), snap, npm, path, link, repo,
-  run -- done. dconf, git config, systemd services and user accounts --
-  not yet (see [doc/providers.md](doc/providers.md)).
+  dconf, run -- done (see [doc/providers.md](doc/providers.md)).
 - **Tested** with unit tests and bats tests against stub tools; not yet
   run end to end on a fresh install (`dev/` holds a container for that).
 

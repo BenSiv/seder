@@ -85,3 +85,14 @@ LUA
     [ "$status" -eq 0 ]
     [[ "$output" == *"+ $HOME/P/configs"* ]]
 }
+
+@test "built-in vars: home, user and uid" {
+    stub id 'echo 4242'
+    machine '"m"'
+    bundle m <<'LUA'
+return {path = {present = {"~/run/${uid}/${user}"}}}
+LUA
+    USER=ben run "$SEDER" plan machines/test.lua
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"+ $HOME/run/4242/ben"* ]]
+}

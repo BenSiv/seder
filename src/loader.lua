@@ -160,7 +160,8 @@ function loader.load_machine(path)
     if machine.bundles == nil or #machine.bundles == 0 then
         fail(path, "'bundles' must list at least one bundle")
     end
-    vars = {home = shell.home(), user = os.getenv("USER")}
+    uid, _ = shell.capture("id -u")
+    vars = {home = shell.home(), user = os.getenv("USER"), uid = string.gsub(uid, "%s+$", "")}
     if machine.vars != nil then
         for name, value in pairs(machine.vars) do
             if type(value) != "string" then

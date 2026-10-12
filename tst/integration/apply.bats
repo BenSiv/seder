@@ -91,3 +91,38 @@ LUA
     run "$SEDER" check machines/test.lua
     [ "$status" -eq 2 ]
 }
+
+@test "dconf writes only keys that differ and compares numbers as numbers" {
+    stub dconf 'case "$1" in
+dump) printf "[org/gnome/desktop/interface]\ncolor-scheme='"'"'default'"'"'\n\n[org/test]\nbrightness=0.59999999999999998\nold=1\n";;
+*) echo "dconf $*" >> "$LOG";; esac'
+    machine '"m"'
+    bundle m <<'LUA'
+return {dconf = {
+    present = {
+        {key = "/org/gnome/desktop/interface/color-scheme", value = "'prefer-dark'"},
+        {key = "/org/test/brightness", value = "0.6"},
+        {key = "/org/test/new", value = "@as []"},
+    },
+    absent = {"/org/test/old", "/org/test/never-set"},
+}}
+LUA
+    run "$SEDER" plan machines/test.lua
+    [[ "$output" == *"+ /org/gnome/desktop/interface/color-scheme  (now 'default')"* ]]
+    run "$SEDER" apply machines/test.lua -y
+    [ "$status" -eq 0 ]
+    grep -qx "dconf write /org/gnome/desktop/interface/color-scheme 'prefer-dark'" "$LOG"
+    grep -qx "dconf write /org/test/new @as \[\]" "$LOG"
+    grep -qx "dconf reset /org/test/old" "$LOG"
+    ! grep -q "brightness\|never-set" "$LOG"
+}
+
+@test "dconf keys must be full key paths" {
+    machine '"m"'
+    bundle m <<'LUA'
+return {dconf = {absent = {"/org/gnome/"}}}
+LUA
+    run "$SEDER" plan machines/test.lua
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"key must be a full key path"* ]]
+}

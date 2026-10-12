@@ -21,8 +21,9 @@ engine = {}
 
 -- Additions run in this order and removals in reverse: packages before
 -- the repos, links and builds that need them, and npm packages are
--- removed before npm itself.
-PROVIDER_ORDER = {"apt", "snap", "npm", "path", "repo", "link", "run"}
+-- removed before npm itself. Settings (dconf) come after the files they
+-- may point at; run comes last, so builds see everything else in place.
+PROVIDER_ORDER = {"apt", "snap", "npm", "path", "repo", "link", "dconf", "run"}
 
 engine.providers = {
     apt = require("providers.apt"),
@@ -31,6 +32,7 @@ engine.providers = {
     path = require("providers.path"),
     repo = require("providers.repo"),
     link = require("providers.link"),
+    dconf = require("providers.dconf"),
     run = require("providers.run"),
 }
 
