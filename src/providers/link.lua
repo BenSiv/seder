@@ -61,8 +61,11 @@ function make_link(item)
     as_needed = function(cmd)
         return shell.for_path(path, cmd)
     end
-    if shell.run(as_needed("mkdir -p " .. shell.quote(shell.parent(path)))) != true then
-        return false
+    parent = shell.parent(path)
+    if lfs.attributes(parent) == nil then
+        if shell.run(as_needed("mkdir -p " .. shell.quote(parent))) != true then
+            return false
+        end
     end
     attributes = lfs.symlinkattributes(path)
     if attributes != nil and attributes.mode != "link" then
