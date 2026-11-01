@@ -4,18 +4,18 @@
 
 | Layer | Where | What |
 |---|---|---|
-| Data | `bundles/*.lua` in the data directory | What should be present or absent, grouped by topic |
-| Config | `machines/*.lua` in the data directory | One machine: its variables and which bundles it uses |
+| Data | `bundles/*.lua` in the user's configuration | What should be present or absent, grouped by topic |
+| Config | `machines/*.lua` in the user's configuration | One machine: its variables and which bundles it uses |
 | Code | this repo, `src/` | The engine and one provider per kind of resource |
 
-The data directory lives outside this repo (myuser's is `configs/seder`),
-like a daat deployment's schemas live in the deployment repo, not in daat.
+The configuration is not part of this repo. Users keep it wherever they
+like and pass seder the path to a machine file; bundles are read from the
+`bundles/` folder next to that file's `machines/` folder.
 
 ## Files are data
 
 Machine and bundle files run in luam's data-only sandbox
-(`sandbox.data_env()`, the same one daat uses for `platform.lua` and
-schemas): no `os`, `io` or `require`. Each must return a table.
+(`sandbox.data_env()`): no `os`, `io` or `require`. Each must return a table.
 `src/loader.lua` then checks every item against the provider that owns
 it -- unknown fields, wrong types, missing required fields, states the
 provider doesn't support, and provider-specific checks (`validate`) --
@@ -72,11 +72,13 @@ seder runs as the user. System changes go through `sudo`; anything under
 `$HOME` does not. Every command goes through `src/shell.lua`, which is
 also what lets the integration tests replace the real tools with stubs.
 
-## Why not Ansible
+## Compared with Ansible
 
-seder replaced an Ansible playbook whose cleanup tasks ("remove npm
-package X", "remove snap Y") each assumed something about the machine and
-failed on a fresh install. Ansible could be made to work with a guard on
-every such task, but the next task written could forget its guard. Here
-the guard is the engine: there is no way to write a removal that runs
-when the thing is absent.
+Ansible describes changes as tasks, and a cleanup task ("remove npm
+package X", "remove snap Y") assumes the thing is there; on a fresh
+install it fails unless it carries its own guard, and each new task can
+forget one. seder has no tasks, only states: the engine compares each
+item with the machine before planning, so a removal of something absent
+cannot run. In exchange seder does far less: one local machine, no
+inventory or remote execution, and only the providers listed in
+[providers.md](providers.md).

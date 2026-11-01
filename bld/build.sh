@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Static build through luam's shared orchestrator, like brain-ex/daat:
+# Static build through luam's shared orchestrator:
 # one self-contained bin/seder, no luam install needed to run it.
 
 cd "$(dirname "$0")/.."

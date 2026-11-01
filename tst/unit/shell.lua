@@ -1,8 +1,8 @@
 -- tst/unit/shell.lua
 -- Unit tests for src/shell.lua's pure helpers: quoting, parent paths and
 -- the home-directory check that decides between sudo and plain commands.
--- Same style as daat's tst/unit/ (require the module, check(), run
--- inline, exit 1 on failure).
+-- Each test requires the module, calls check() inline and exits 1 on
+-- failure.
 
 shell = require("shell")
 

@@ -6,7 +6,9 @@ what is actually there and changes only the difference. Removing
 something that is not installed does nothing, on every machine, without
 per-step guards.
 
-seder is the engine. Users provide configuration files for their machines; see the documentation for the expected format.
+seder is only the engine. The configuration is yours: write it wherever
+you like (its own repo, a dotfiles repo, a USB stick) and point seder at
+it when you run it.
 
 ## Status
 
@@ -50,30 +52,45 @@ seder apply [machine.lua] [-y]   # show the plan, confirm, apply
 seder --version                  # e.g. "seder 0.2.0 (485007a)": version and build commit
 ```
 
-`machine.lua` defaults to `machines/<hostname>.lua` under the current
-directory. A data directory looks like:
+## Configuration
+
+A configuration is a directory with two folders side by side:
 
 ```
-machines/laptop.lua    -- vars and the bundles this machine uses
+machines/laptop.lua    -- one machine: its vars and the bundles it uses
 bundles/base.lua       -- what should be present or absent, by provider
-bundles/gnome.lua
+bundles/desktop.lua
 ```
+
+Pass the machine file to any command (`seder plan path/to/machines/laptop.lua`);
+its bundles are read from the `bundles/` folder next to `machines/`. With
+no argument, seder looks for `machines/<hostname>.lua` in the current
+directory, so running it from inside the configuration needs no path.
 
 ```lua
 -- machines/laptop.lua
 return {
     requires_seder = "0.2.0",   -- older seders refuse with "update seder"
-    vars = {projects = "~/Projects", configs = "${projects}/configs"},
-    bundles = {"base", "gnome", "dev"},
+    vars = {dotfiles = "~/dotfiles"},
+    bundles = {"base", "desktop"},
 }
 
--- bundles/gnome.lua
+-- bundles/desktop.lua
 return {
     apt = {present = {"gnome-tweaks"}, absent = {"thunderbird"}},
     snap = {absent = {"firefox"}},
-    link = {present = {{path = "~/.bashrc", target = "${configs}/bash/bashrc.sh"}}},
+    link = {present = {{path = "~/.bashrc", target = "${dotfiles}/bashrc"}}},
 }
 ```
+
+## Compared with Ansible
+
+seder covers a small slice of what tools like Ansible do: one local
+machine, run as its user, no inventory, no remote hosts, no modules
+beyond its providers. The difference in that slice is that every item is
+a state, not a task. A removal of something already absent is planned as
+"ok" and never runs, so a configuration written against an old machine
+also applies cleanly to a fresh install, with no per-task guards.
 
 How planning, ordering and validation work: [doc/architecture.md](doc/architecture.md).
 Every provider and its fields: [doc/providers.md](doc/providers.md).

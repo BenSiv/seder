@@ -5,7 +5,7 @@
 # and desktop sessions don't run in containers, so snap and dconf items
 # plan as unavailable.
 #
-#   dev/fresh.sh debian:trixie ~/Projects/configs/seder machines/laptop.lua
+#   dev/fresh.sh debian:trixie path/to/config machines/laptop.lua
 ARG BASE=debian:trixie
 FROM ${BASE}
 
@@ -36,5 +36,6 @@ COPY --chown=$USERNAME:$USERNAME . seder
 RUN cd seder && bash bld/build.sh
 
 WORKDIR /data
-ENTRYPOINT ["/home/myuser/Projects/seder/bin/seder"]
+ENV PATH="/home/${USERNAME}/Projects/seder/bin:${PATH}"
+ENTRYPOINT ["seder"]
 CMD ["plan", "-v"]

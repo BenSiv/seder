@@ -5,7 +5,7 @@ set -euo pipefail
 # standalone scripts that exit non-zero on failure) plus bats
 # integration tests (tst/integration/*.bats, driving the built
 # bin/seder against stub tools and a scratch HOME -- see
-# tst/integration/test_helper.bash). Mirrors daat's bld/test.sh.
+# tst/integration/test_helper.bash).
 #
 # Requires `bats` on PATH (apt install bats) and a built luam checkout
 # the same way bld/build.sh does.

@@ -1,7 +1,6 @@
 -- Loads machine and bundle files and turns them into the desired state the
 -- engine plans against. Files are data, not code: each is run in the
--- same data-only sandbox daat uses for platform.lua and schemas (no io,
--- os or require) and must return a table. Every field is then checked
+-- luam's data-only sandbox (no io, os or require) and must return a table. Every field is then checked
 -- against the provider that owns it, so a typo fails before anything
 -- touches the machine.
 
