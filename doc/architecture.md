@@ -12,6 +12,11 @@ The configuration is not part of this repo. Users keep it wherever they
 like and pass seder the path to a machine file; bundles are read from the
 `bundles/` folder next to that file's `machines/` folder.
 
+A configuration can also extend seder: `managers/<name>.lua` describes a
+package manager with no built-in provider as a few shell commands, and
+`src/providers/manager.lua` turns that description into a provider (see
+[providers.md](providers.md#package-managers-in-the-configuration)).
+
 ## Files are data
 
 Machine and bundle files run in luam's data-only sandbox
@@ -42,7 +47,9 @@ instead of an error about the feature it uses.
 ## Plan
 
 `src/engine.lua` walks providers in a fixed order (`PROVIDER_ORDER`:
-apt, dnf, pacman, snap, flatpak, npm, path, repo, link, dconf, run). For each provider with items:
+apt, dnf, pacman, snap, flatpak, npm, path, repo, link, dconf, run), with
+package managers from the configuration slotted in after the provider
+their `after` names (pacman by default). For each provider with items:
 
 1. `available()` -- is its tool on the machine?
 2. `state(entries)` -- one probe for all items (one `dpkg-query` or

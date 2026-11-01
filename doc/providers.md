@@ -89,6 +89,49 @@ or when a source lies in a checkout this plan clones or pulls. List the
 inputs that end up in the output -- for a luam project, its own `src` and
 `bld` plus luam's `src` and `lib`.
 
+## Package managers in the configuration
+
+A package manager without a built-in provider is described as data, in
+`managers/<name>.lua` beside the configuration's `bundles/`. A bundle
+that names an unknown provider makes seder look for that file; built-in
+names always mean the built-in provider. Like bundles, the file runs in
+the data-only sandbox and must return a table:
+
+| Key | Required | Meaning |
+|---|---|---|
+| `list` | yes | Command printing installed packages, one per line. Only the first word of each line counts, so `name version` output works. |
+| `install` | yes | Command that installs; the package names are appended, quoted. |
+| `remove` | yes | Command that removes; the package names are appended, quoted. |
+| `refresh` | no | Command run once before installing (`apk update`). |
+| `command` | no | Program that must be on `PATH` for the manager to count as installed. Defaults to `<name>`. |
+| `sudo` | no | Run `install`, `remove` and `refresh` through sudo. Default `true`; set `false` for user-level tools. `list` never uses sudo. |
+| `one_at_a_time` | no | One `install`/`remove` call per package, for tools that take a single name. Default `false`. |
+| `after` | no | Built-in provider this one runs after. Default `pacman`, alongside the system package managers; `npm` places it after every package manager, so one of them can install it first. |
+
+Items are package names (`"jq"` or `{name = "jq"}`) with `present` and
+`absent`, and behave like the built-in package providers: one `list` per
+plan, removals of what isn't installed never run, and when the program
+is missing `absent` items are done and `present` items are left to apply.
+
+```lua
+-- managers/apk.lua: Alpine
+return {list = "apk info", install = "apk add", remove = "apk del", refresh = "apk update"}
+
+-- managers/pipx.lua: Python applications for the current user
+return {
+    list = "pipx list --short",
+    install = "pipx install",
+    remove = "pipx uninstall",
+    sudo = false,
+    one_at_a_time = true,
+    after = "npm",
+}
+```
+
+More in [examples/managers/](../examples/managers/). A manager that needs
+more than this (package files from URLs, its own checks) is a built-in
+provider instead; see below.
+
 ## Adding a provider
 
 Create `src/providers/<name>.lua` returning a table with:

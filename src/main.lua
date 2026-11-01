@@ -8,7 +8,8 @@
 --
 -- machine.lua defaults to machines/<hostname>.lua under the current
 -- directory; its bundles are read from the bundles/ directory next to
--- machines/. See doc/architecture.md.
+-- machines/, and package managers seder has no provider for from
+-- managers/. See doc/architecture.md.
 
 if package.preload["engine"] == nil then
     script_dir = string.match(arg[0], "^(.*/)")
@@ -61,8 +62,10 @@ function parse_args(args)
     return options
 end
 
+-- uname -n rather than hostname: every distribution has uname, while
+-- hostname is a separate package on some (Arch, minimal Fedora).
 function default_machine()
-    out, _ = shell.capture("hostname")
+    out, _ = shell.capture("uname -n")
     return "machines/" .. string.gsub(out, "%s+$", "") .. ".lua"
 end
 
@@ -96,8 +99,8 @@ function main(args)
     if machine_path == nil then
         machine_path = default_machine()
     end
-    desired, _ = loader.load_desired(machine_path, engine.providers)
-    groups = engine.plan(desired, {pull = options.pull})
+    desired, _, providers = loader.load_desired(machine_path, engine.providers)
+    groups = engine.plan(desired, {pull = options.pull}, providers)
     counts = engine.print_plan(groups, options.verbose)
     changes = counts.add + counts.remove + counts.conflict
     if command == "plan" then

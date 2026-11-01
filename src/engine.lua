@@ -15,7 +15,9 @@
 --                      -> "present" | "absent" | "conflict", note
 --   add(items) / remove(items) -> ok
 -- Optional: validate(item, state) -> error string or nil;
---           touches(item) -> path an add/remove of this item changes.
+--           touches(item) -> path an add/remove of this item changes;
+--           after     built-in provider to run after (package managers
+--                     described in a configuration's managers/).
 --
 -- `context` carries the run's options (context.options.pull) and the
 -- paths earlier providers in this plan will change (context.changing),
@@ -28,8 +30,7 @@ engine = {}
 
 -- Additions run in this order and removals in reverse: system packages
 -- (whichever manager the data uses) first, then other package sources;
--- packages before
--- the repos, links and builds that need them, and npm packages are
+-- packages before the repos, links and builds that need them, and npm packages are
 -- removed before npm itself. Settings (dconf) come after the files they
 -- may point at; run comes last, so builds see everything else in place.
 PROVIDER_ORDER = {
@@ -50,6 +51,27 @@ engine.providers = {
     dconf = require("providers.dconf"),
     run = require("providers.run"),
 }
+
+-- PROVIDER_ORDER with the configuration's package managers slotted in,
+-- each right after the built-in provider its `after` names (by name when
+-- several share a slot).
+function engine.order(providers)
+    order = {}
+    for _, name in ipairs(PROVIDER_ORDER) do
+        table.insert(order, name)
+        extra = {}
+        for other, provider in pairs(providers) do
+            if provider.after == name then
+                table.insert(extra, other)
+            end
+        end
+        table.sort(extra)
+        for _, other in ipairs(extra) do
+            table.insert(order, other)
+        end
+    end
+    return order
+end
 
 function decide(provider, entry, available, reason, current, context)
     action = {entry = entry, label = entry.item[provider.key], note = nil}
@@ -80,19 +102,23 @@ function decide(provider, entry, available, reason, current, context)
     return action
 end
 
--- Returns a plan: one group per provider, in PROVIDER_ORDER, each with
+-- Returns a plan: one group per provider, in engine.order, each with
 -- its actions. Action kinds: "add", "remove", "ok", "conflict".
 -- options.pull: let repo items fast-forward to their upstream.
-function engine.plan(desired, options)
+-- `providers` defaults to the built-in ones.
+function engine.plan(desired, options, providers)
     if options == nil then
         options = {}
     end
+    if providers == nil then
+        providers = engine.providers
+    end
     context = {options = options, changing = {}}
     groups = {}
-    for _, name in ipairs(PROVIDER_ORDER) do
+    for _, name in ipairs(engine.order(providers)) do
         entries = desired[name]
         if entries != nil and #entries > 0 then
-            provider = engine.providers[name]
+            provider = providers[name]
             available, reason = provider.available()
             current = nil
             if available == true then

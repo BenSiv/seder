@@ -16,6 +16,9 @@ it when you run it.
 - **Providers:** apt, dnf, pacman (each with package-file URLs), snap,
   flatpak, npm, path, link, repo, dconf, run. Nothing in the engine assumes a
   distribution; data picks the providers its machines have -- done (see [doc/providers.md](doc/providers.md)).
+- **Other package managers** (zypper, apk, pipx, ...) are described in the
+  configuration itself, a few shell commands each -- done (see
+  [Other package managers](#other-package-managers)).
 - **Tested** with unit tests and bats tests against stub tools; not yet
   run end to end on a fresh install (`dev/fresh.sh` runs one in a container
   of any distribution).
@@ -54,17 +57,19 @@ seder --version                  # e.g. "seder 0.2.0 (485007a)": version and bui
 
 ## Configuration
 
-A configuration is a directory with two folders side by side:
+A configuration is a directory with these folders side by side:
 
 ```
 machines/laptop.lua    -- one machine: its vars and the bundles it uses
 bundles/base.lua       -- what should be present or absent, by provider
 bundles/desktop.lua
+managers/zypper.lua    -- optional: a package manager seder has no provider for
 ```
 
 Pass the machine file to any command (`seder plan path/to/machines/laptop.lua`);
 its bundles are read from the `bundles/` folder next to `machines/`. With
-no argument, seder looks for `machines/<hostname>.lua` in the current
+no argument, seder looks for `machines/<hostname>.lua` (the name `uname -n`
+prints) in the current
 directory, so running it from inside the configuration needs no path.
 
 ```lua
@@ -82,6 +87,31 @@ return {
     link = {present = {{path = "~/.bashrc", target = "${dotfiles}/bashrc"}}},
 }
 ```
+
+## Other package managers
+
+seder has built-in providers for apt, dnf and pacman. For any other
+package manager, describe it in `managers/<name>.lua` and use `<name>` in
+bundles like a built-in provider:
+
+```lua
+-- managers/zypper.lua
+return {
+    list = "rpm -qa --qf '%{NAME}\\n'",  -- installed package names, one per line
+    install = "zypper --non-interactive install",
+    remove = "zypper --non-interactive remove",
+}
+
+-- bundles/opensuse.lua
+return {
+    zypper = {present = {"git", "jq"}, absent = {"MozillaThunderbird"}},
+}
+```
+
+The same works for user-level tools (pipx, cargo, ...). All the keys are
+in [doc/providers.md](doc/providers.md#package-managers-in-the-configuration);
+[examples/](examples/) has complete configurations for openSUSE and
+Alpine.
 
 ## Compared with Ansible
 

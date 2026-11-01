@@ -1,5 +1,5 @@
 -- Loads machine and bundle files and turns them into the desired state the
--- engine plans against. Files are data, not code: each is run in the
+-- engine plans against. Files are data, not code: each is run in
 -- luam's data-only sandbox (no io, os or require) and must return a table. Every field is then checked
 -- against the provider that owns it, so a typo fails before anything
 -- touches the machine.
@@ -7,6 +7,7 @@
 sandbox = require("sandbox")
 shell = require("shell")
 version = require("version")
+manager = require("providers.manager")
 
 loader = {}
 
@@ -189,24 +190,53 @@ function loader.load_machine(path)
     return machine
 end
 
+-- The provider a bundle names: a built-in one, or else a package manager
+-- described in the configuration's managers/<name>.lua (added to
+-- `providers` once loaded). Nil when neither exists.
+function find_provider(providers, built_in, name, config_dir)
+    if providers[name] != nil then
+        return providers[name]
+    end
+    path = config_dir .. "/managers/" .. name .. ".lua"
+    if shell.ok("test -f " .. shell.quote(path)) == false then
+        return nil
+    end
+    definition = loader.load_table(path)
+    err = manager.check(definition, built_in)
+    if err != nil then
+        fail(path, err)
+    end
+    providers[name] = manager.provider(name, definition)
+    return providers[name]
+end
+
 -- Builds the desired state for a machine file:
 --   desired[provider_name] = list of {item, state, bundle, where}
 -- in the machine's bundle order, then file order. Bundles are read from
--- the bundles/ directory next to the machine file's directory. The same resource wanted both
--- present and absent is an error, naming both places.
-function loader.load_desired(machine_path, providers)
+-- the bundles/ directory next to the machine file's directory, and
+-- package managers from managers/ beside it. The same resource wanted
+-- both present and absent is an error, naming both places.
+-- Returns desired, machine and the providers in use: `providers` plus
+-- any managers the bundles named.
+function loader.load_desired(machine_path, built_in)
     machine = loader.load_machine(machine_path)
-    bundle_dir = shell.parent(shell.parent(machine_path)) .. "/bundles"
+    config_dir = shell.parent(shell.parent(machine_path))
+    bundle_dir = config_dir .. "/bundles"
+    providers = {}
+    for name, provider in pairs(built_in) do
+        providers[name] = provider
+    end
     desired = {}
     seen = {}
     for _, bundle_name in ipairs(machine.bundles) do
         path = bundle_dir .. "/" .. bundle_name .. ".lua"
         bundle = loader.load_table(path)
         for _, provider_name in ipairs(sorted_keys(bundle)) do
-            provider = providers[provider_name]
+            provider = find_provider(providers, built_in, provider_name, config_dir)
             if provider == nil then
-                fail(path, "unknown provider '" .. provider_name .. "' (known: "
-                    .. table.concat(sorted_keys(providers), ", ") .. ")")
+                fail(path, "unknown provider '" .. provider_name .. "' (built in: "
+                    .. table.concat(sorted_keys(built_in), ", ") .. "; or describe it in "
+                    .. config_dir .. "/managers/" .. provider_name .. ".lua)")
             end
             section = bundle[provider_name]
             if type(section) != "table" then
@@ -244,7 +274,7 @@ function loader.load_desired(machine_path, providers)
             end
         end
     end
-    return desired, machine
+    return desired, machine, providers
 end
 
 return loader
