@@ -8,7 +8,7 @@
 | Config | `machines/*.lua` in the data directory | One machine: its variables and which bundles it uses |
 | Code | this repo, `src/` | The engine and one provider per kind of resource |
 
-The data directory lives outside this repo (Ben's is `configs/seder`),
+The data directory lives outside this repo (myuser's is `configs/seder`),
 like a daat deployment's schemas live in the deployment repo, not in daat.
 
 ## Files are data

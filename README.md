@@ -6,10 +6,7 @@ what is actually there and changes only the difference. Removing
 something that is not installed does nothing, on every machine, without
 per-step guards.
 
-seder is the engine. The description of a particular set of machines
-lives in a separate data directory, the way daat is the engine and lims
-is one deployment's data. Ben's machines are described in
-[configs/seder](https://github.com/BenSiv/configs/tree/main/seder).
+seder is the engine. Users provide configuration files for their machines; see the documentation for the expected format.
 
 ## Status
 

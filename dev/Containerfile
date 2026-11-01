@@ -20,19 +20,21 @@ RUN if command -v apt-get > /dev/null; then \
         echo "no supported package manager in this image" >&2; exit 1; \
     fi
 
-RUN useradd -m -s /bin/bash ben \
-    && mkdir -p /etc/sudoers.d \
-    && echo 'ben ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ben
+ARG USERNAME=myuser
 
-USER ben
-WORKDIR /home/ben/Projects
+RUN useradd -m -s /bin/bash $USERNAME \
+    && mkdir -p /etc/sudoers.d \
+    && echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USERNAME
+
+USER $USERNAME
+WORKDIR /home/$USERNAME/Projects
 
 RUN git clone --depth 1 https://github.com/BenSiv/luam.git luam \
     && cd luam && bash bld/build_lang.sh
 
-COPY --chown=ben:ben . seder
+COPY --chown=$USERNAME:$USERNAME . seder
 RUN cd seder && bash bld/build.sh
 
 WORKDIR /data
-ENTRYPOINT ["/home/ben/Projects/seder/bin/seder"]
+ENTRYPOINT ["/home/myuser/Projects/seder/bin/seder"]
 CMD ["plan", "-v"]

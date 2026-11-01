@@ -92,9 +92,9 @@ LUA
     bundle m <<'LUA'
 return {path = {present = {"~/run/${uid}/${user}"}}}
 LUA
-    USER=ben run "$SEDER" plan machines/test.lua
+    USER=myuser run "$SEDER" plan machines/test.lua
     [ "$status" -eq 0 ]
-    [[ "$output" == *"+ $HOME/run/4242/ben"* ]]
+    [[ "$output" == *"+ $HOME/run/4242/myuser"* ]]
 }
 
 @test "--version names the version and the commit it was built from" {
